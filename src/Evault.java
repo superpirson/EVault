@@ -19,7 +19,7 @@ public class Evault {
 	static Path installTarg;
 	static Path userDataDir;
 	static Path userDataTarg;
-	public static void main(String[] args) {
+	public static void main(String[] args) { 
 		// TODO Auto-generated method stub
 		URL url = getLocation(Evault.class);
 		File jarFile = urlToFile(url);
@@ -32,20 +32,21 @@ public class Evault {
 
 		switch (OsCheck.getOperatingSystemType()) {
 		case Linux:
-			
+			userDataDir=  Paths.get(homeDir,".config","exodus");
 			break;
 		case Windows:
 			installDir = Paths.get(homeDir, "AppData","Roaming", "Exodus");
-			userDataDir=  Paths.get(jarDir,"AppData", "Local","exodus");
+			userDataDir=  Paths.get(homeDir,"AppData", "Local","exodus");
 			break;
 		case MacOS:
 			
 			break;
 		default:
 		     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
+			userDataDir=  Paths.get(homeDir,".config","exodus");
 			break;
 		} 
-		
+		if (installTarg!= null) {
 		//Check if install exsists on removeable drive
 		if (Files.notExists(installTarg)) {
 			//if not Check if install exsists on computer
@@ -109,6 +110,8 @@ public class Evault {
 			}	
 		}else if(Files.exists(installDir)) {
 			//TODO: We have 2 diffrent installs!
+	        JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
+
 		}
 		
 		//Make links to our removeable install
@@ -125,6 +128,7 @@ public class Evault {
 				x.printStackTrace();
 				System.exit(1);
 			}
+		}
 		}
 		
 		//Check if udata exsists on removeable drive
@@ -233,9 +237,16 @@ public class Evault {
 				System.exit(1);
 			}
 		}
-			
+		
 		//Run program
-			
+		try {
+			Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
+		} catch (IOException e) {
+			System.err.println("failed to run Exodus!");
+	        JOptionPane.showMessageDialog(null, "Failed to run Exodus! Check your permissions!", "Failed to run Exodus", JOptionPane.ERROR_MESSAGE);
+	    	e.printStackTrace();
+		}
+
 	}
 	/**
 	 * Gets the base location of the given class.
