@@ -178,19 +178,19 @@ public class Evault {
 			}
 		}
 		//Purge Old Symlinks
-		if (Files.isSymbolicLink(installDir)) {
-			System.out.println("Found an old Symlink. Deleting.");
+		if (Files.isSymbolicLink(userDataDir)) {
+			System.out.println("Found an old wallet Symlink. Deleting.");
 			try {
-				Files.deleteIfExists(installDir);
+				Files.deleteIfExists(userDataDir);
 			} catch (IOException e) {
 				System.err.println("failed to delete file due to IO exception!");
 				e.printStackTrace();
 			}catch (SecurityException e) {
-				System.err.println("failed to delete old Symlink Check your permissions!");
+				System.err.println("failed to delete old Symlink, Check your permissions!");
 		        JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();
 			}
-		}else if(Files.exists(installDir)) {
+		}else if(Files.exists(userDataDir)) {
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 			Date date = new Date();
 
