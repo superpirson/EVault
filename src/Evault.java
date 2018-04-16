@@ -35,8 +35,8 @@ public class Evault {
 			userDataDir=  Paths.get(homeDir,".config","exodus");
 			break;
 		case Windows:
-			installDir = Paths.get(homeDir, "AppData","Roaming", "Exodus");
-			userDataDir=  Paths.get(homeDir,"AppData", "Local","exodus");
+			userDataDir = Paths.get(homeDir, "AppData","Roaming", "Exodus");
+			 installDir=  Paths.get(homeDir,"AppData", "Local","exodus");
 			break;
 		case MacOS:
 			
@@ -46,7 +46,7 @@ public class Evault {
 			userDataDir=  Paths.get(homeDir,".config","exodus");
 			break;
 		} 
-		if (installTarg!= null) {
+		if (installDir!= null) {
 		//Check if install exsists on removeable drive
 		if (Files.notExists(installTarg)) {
 			//if not Check if install exsists on computer
