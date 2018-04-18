@@ -32,7 +32,9 @@ public class Evault {
 
 		switch (OsCheck.getOperatingSystemType()) {
 		case Linux:
-			userDataDir=  Paths.get(homeDir,".config","exodus");
+			userDataDir=  Paths.get(homeDir,".config","Exodus");
+			installDir=  Paths.get(homeDir,"Exodus-linux-x64");
+
 			break;
 		case Windows:
 			userDataDir = Paths.get(homeDir, "AppData","Roaming", "Exodus");
@@ -48,7 +50,7 @@ public class Evault {
 		} 
 		if (installDir!= null) {
 		//Check if install exsists on removeable drive
-		if (Files.notExists(installTarg)) {
+		if (Files.notExists(installTarg)) { 
 			//if not Check if install exsists on computer
 			if (Files.exists(installDir)) {
 				if (Files.isSymbolicLink(installDir)) {
@@ -222,7 +224,7 @@ public class Evault {
 				break;
 		
 			}
-		}	
+		}
 		//Make links to our removeable Udata
 		if (Files.notExists(userDataDir)) {
 			try {
@@ -236,11 +238,38 @@ public class Evault {
 				x.printStackTrace();
 				System.exit(1);
 			}
+			if (Files.notExists(userDataTarg)) {
+				try {
+					Files.createDirectory(userDataTarg);
+				} catch (IOException e) {
+					System.err.println("failed to make User Data folder!");
+			        JOptionPane.showMessageDialog(null, "failed to make USER DATA FOLDER!", "Error!", JOptionPane.ERROR_MESSAGE);
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
+
 		}
 		
 		//Run program
 		try {
-			Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
+			switch (OsCheck.getOperatingSystemType()) {
+			case Linux:
+				 ProcessBuilder pb = new ProcessBuilder(Paths.get(installTarg.toString(),"Exodus").toString());
+				 Process p = pb.start();
+				//Runtime.getRuntime().exec("Exodus", null, installTarg.toFile());
+				break;
+			case Windows:
+				Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
+				break;
+			case MacOS:
+				
+				break;
+			default:
+			     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
+				userDataDir=  Paths.get(homeDir,".config","exodus");
+				break;
+			} 
 		} catch (IOException e) {
 			System.err.println("failed to run Exodus!");
 	        JOptionPane.showMessageDialog(null, "Failed to run Exodus! Check your permissions!", "Failed to run Exodus", JOptionPane.ERROR_MESSAGE);
