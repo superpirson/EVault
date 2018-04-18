@@ -267,7 +267,7 @@ public class Evault {
 				//Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
 				break;
 			case MacOS:
-				
+				 
 				break;
 			default:
 			     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
