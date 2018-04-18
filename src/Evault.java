@@ -252,15 +252,19 @@ public class Evault {
 		}
 		
 		//Run program
+		 ProcessBuilder pb ;
+		 Process p;
 		try {
 			switch (OsCheck.getOperatingSystemType()) {
 			case Linux:
-				 ProcessBuilder pb = new ProcessBuilder(Paths.get(installTarg.toString(),"Exodus").toString());
-				 Process p = pb.start();
+				pb=new ProcessBuilder(Paths.get(installTarg.toString(),"Exodus").toString());
+				  p = pb.start();
 				//Runtime.getRuntime().exec("Exodus", null, installTarg.toFile());
 				break;
 			case Windows:
-				Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
+				 pb = new ProcessBuilder(Paths.get(installTarg.toString(),"Exodus.exe").toString());
+				 p = pb.start();
+				//Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
 				break;
 			case MacOS:
 				
