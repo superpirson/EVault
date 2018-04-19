@@ -1,3 +1,4 @@
+import java.awt.Toolkit;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -10,6 +11,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 public class Evault {
 	static final String installLinkFolderName = "exodus_install";
@@ -29,7 +31,7 @@ public class Evault {
 		System.out.println("Home directory is: " + homeDir.toString());
 		userDataTarg= Paths.get(jarDir,dataLinkFolderName);
 		installTarg = Paths.get(jarDir,installLinkFolderName);
-
+		ImageIcon icon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(Evault.class.getResource("/images/256x256.png")));
 		switch (OsCheck.getOperatingSystemType()) {
 		case Linux:
 			userDataDir=  Paths.get(homeDir,".config","Exodus");
@@ -69,7 +71,7 @@ public class Evault {
 	                    "No",
 	                    "Cancel"};
 				int choice = JOptionPane.showOptionDialog(null,"There is a local install on this computer, but not in the target location. Should we move the install to the target?","Migrate Install?",
-	    		JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,null,options,options[2]);
+	    		JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
 				switch (choice){
 				case 0:
 					try {
@@ -154,7 +156,7 @@ public class Evault {
 	                    "No",
 	                    "Cancel"};
 				int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but not in the target location. Should we migrate the wallet to the target? No backup will be made.","Migrate Wallet?",
-	    		JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,null,options,options[2]);
+	    		JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
 				switch (choice){
 				case 0:
 					try {
@@ -202,7 +204,7 @@ public class Evault {
 			Object[] options = {"Yes",
                     "Cancel"};
 			int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but also one in the target location. Should we overwrite the wallet on this computer? A backup will be made at " + backupLocation.toString(),"Migrate Wallet?",
-    		JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,null,options,options[1]);
+    		JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[1]);
 			switch (choice){
 			case 0:
 				try {
