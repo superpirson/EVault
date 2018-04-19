@@ -116,7 +116,7 @@ public class Evault {
 				e.printStackTrace();
 			}	
 		}else if(Files.exists(installDir)) {
-			System.err.println("Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive.");
+			System.err.println("Please note that an install is located on both the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive.");
 
 			// JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
 
