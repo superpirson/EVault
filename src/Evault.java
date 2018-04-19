@@ -111,8 +111,9 @@ public class Evault {
 				e.printStackTrace();
 			}	
 		}else if(Files.exists(installDir)) {
-			//TODO: We have 2 diffrent installs!
-	        JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
+			System.err.println("Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive.");
+
+			// JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
 
 		}
 		
@@ -215,7 +216,7 @@ public class Evault {
 						System.err.println("failed to move data folder due to security problems! Check your permissions!");
 				        JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
 						e.printStackTrace();
-				        System.exit(0);
+				        System.exit(0); 
 
 				}
 				break;

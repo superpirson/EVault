@@ -30,7 +30,7 @@
 		<!-- Put everything in ${build} into a jar file -->
 		<jar jarfile="EVault.jar"> 
 			<fileset dir="${build}" includes="**/*" />
-			<fileset dir="${src}" includes="images/*" />
+			<fileset dir="${src}" includes="images/*" /> 
 
 			<manifest>
 				<!-- SET YOUR MAIN CLASS HERE -->
