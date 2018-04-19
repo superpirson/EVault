@@ -44,7 +44,8 @@ public class Evault {
 			 installDir=  Paths.get(homeDir,"AppData", "Local","exodus");
 			break;
 		case MacOS:
-			 
+			userDataDir = Paths.get(homeDir, "Library","Application Support", "Exodus");
+			installDir=  Paths.get("/Applications");
 			break;
 		default:
 		     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
@@ -276,11 +277,14 @@ public class Evault {
 				//Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
 				break;
 			case MacOS:
-				 
+				pb = new ProcessBuilder(Paths.get(executableFolder,"Exodus.app").toString());
+				 p = pb.start();
 				break;
 			default:
 			     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
 				userDataDir=  Paths.get(homeDir,".config","exodus");
+				pb=new ProcessBuilder(Paths.get(executableFolder,"Exodus").toString());
+				p = pb.start();
 				break;
 			} 
 		} catch (IOException e) {
