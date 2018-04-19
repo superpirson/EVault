@@ -23,6 +23,7 @@ public class Evault {
 	static Path userDataTarg;
 	public static void main(String[] args) { 
 		// TODO Auto-generated method stub
+		boolean useNativeInstall = false;
 		URL url = getLocation(Evault.class);
 		File jarFile = urlToFile(url);
 		String jarDir = jarFile.getParent();
@@ -31,7 +32,7 @@ public class Evault {
 		System.out.println("Home directory is: " + homeDir.toString());
 		userDataTarg= Paths.get(jarDir,dataLinkFolderName);
 		installTarg = Paths.get(jarDir,installLinkFolderName);
-		ImageIcon icon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(Evault.class.getResource("/images/256x256.png")));
+		ImageIcon icon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(Evault.class.getResource("/images/48x48.png")));
 		switch (OsCheck.getOperatingSystemType()) {
 		case Linux:
 			userDataDir=  Paths.get(homeDir,".config","Exodus");
@@ -43,7 +44,7 @@ public class Evault {
 			 installDir=  Paths.get(homeDir,"AppData", "Local","exodus");
 			break;
 		case MacOS:
-			
+			 
 			break;
 		default:
 		     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
@@ -86,6 +87,7 @@ public class Evault {
 					}
 					break;
 				case 1:
+					useNativeInstall = true;
 					break;
 				default:
 			        System.exit(0);
@@ -257,15 +259,19 @@ public class Evault {
 		//Run program
 		 ProcessBuilder pb ;
 		 Process p;
+		 String executableFolder=installTarg.toString();
+		 if (useNativeInstall) {
+			 executableFolder=installDir.toString();
+		 }
 		try {
 			switch (OsCheck.getOperatingSystemType()) {
 			case Linux:
-				pb=new ProcessBuilder(Paths.get(installTarg.toString(),"Exodus").toString());
+				pb=new ProcessBuilder(Paths.get(executableFolder,"Exodus").toString());
 				  p = pb.start();
 				//Runtime.getRuntime().exec("Exodus", null, installTarg.toFile());
 				break;
 			case Windows:
-				 pb = new ProcessBuilder(Paths.get(installTarg.toString(),"Exodus.exe").toString());
+				 pb = new ProcessBuilder(Paths.get(executableFolder,"Exodus.exe").toString());
 				 p = pb.start();
 				//Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
 				break;
