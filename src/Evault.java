@@ -7,10 +7,11 @@ import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
+import org.apache.commons.io.FileUtils;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 public class Evault {
@@ -31,158 +32,193 @@ public class Evault {
 		System.out.println("jar directory is: " + jarDir.toString());
 		System.out.println("Home directory is: " + homeDir.toString());
 		userDataTarg= Paths.get(jarDir,dataLinkFolderName);
-		installTarg = Paths.get(jarDir,installLinkFolderName);
 		ImageIcon icon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(Evault.class.getResource("/images/48x48.png")));
+		
+		//check if the install data folder exsists. If it does not, create it.
+		Path installRootFolder = Paths.get(jarDir,installLinkFolderName);
+		if (Files.notExists(installRootFolder)){
+			try {
+				Files.createDirectory(installRootFolder);
+			} catch (IOException e) {
+				System.err.println("failed to create installs folder due to IO exception!");
+				JOptionPane.showMessageDialog(null, "failed to create the installs folder due to an IO exception!", "IO Error", JOptionPane.ERROR_MESSAGE);
+
+				e.printStackTrace();
+			}
+		}
+		
 		switch (OsCheck.getOperatingSystemType()) {
 		case Linux:
 			userDataDir=  Paths.get(homeDir,".config","Exodus");
 			installDir=  Paths.get(homeDir,"Exodus-linux-x64");
-
+			installTarg = Paths.get(jarDir,installLinkFolderName,"linux");
 			break;
 		case Windows:
 			userDataDir = Paths.get(homeDir, "AppData","Roaming", "Exodus");
-			 installDir=  Paths.get(homeDir,"AppData", "Local","exodus");
+			installDir=  Paths.get(homeDir,"AppData", "Local","exodus");
+			installTarg = Paths.get(jarDir,installLinkFolderName,"Windows");			
+
 			break;
 		case MacOS:
 			userDataDir = Paths.get(homeDir, "Library","Application Support", "Exodus");
-			installDir=  Paths.get("/Applications");
+			installDir=  Paths.get("/Applications","Exodus.app");
+			installTarg = Paths.get(jarDir,installLinkFolderName,"Exodus.app");
+
 			break;
 		default:
-		     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
+			System.err.println("Operating system is unknown! Guessing linux/unix-like?");
 			userDataDir=  Paths.get(homeDir,".config","exodus");
+			installTarg = Paths.get(jarDir,installLinkFolderName,"Unknown_OS");
+
 			break;
 		} 
+		System.out.println("looking for user data in userDataDir: " + userDataDir.toString());
+		System.out.println("looking for the install in: " + installDir.toString());
 		if (installDir!= null) {
-		//Check if install exsists on removeable drive
-		if (Files.notExists(installTarg)) { 
-			//if not Check if install exsists on computer
-			if (Files.exists(installDir)) {
-				if (Files.isSymbolicLink(installDir)) {
-			        System.err.println("Error! No install, but symlink detected on either the target computer, or the true install directory!");
-			        JOptionPane.showMessageDialog(null, "No install detected on either the target computer, or the true install directory. A symlink was detected though, and will be deleted.", "No Install!", JOptionPane.ERROR_MESSAGE);
-			        try {
+			//Check if install exsists on removeable drive
+			if (Files.notExists(installTarg)) { 
+				//if not Check if install exsists on computer
+				if (Files.exists(installDir)) {
+					if (Files.isSymbolicLink(installDir)) {
+						System.err.println("Error! No install, but symlink detected on either the target computer, or the true install directory!");
+						JOptionPane.showMessageDialog(null, "No install detected on either the target computer, or on this EVault.\nA symlink was detected though, and will be deleted.", "No Install!", JOptionPane.ERROR_MESSAGE);
+						try {
+							Files.deleteIfExists(installDir);
+						} catch (IOException e) {
+							System.err.println("failed to delete file due to IO exception!");
+							e.printStackTrace();
+						}
+						System.exit(1);
+					}
+					//if so, offer migration & prompt for setup
+					Object[] options = {"Yes",
+							"No",
+					"Cancel"};
+					int choice = JOptionPane.showOptionDialog(null,"There is a local install on this computer, but not on this EVault.\n Should we move the install to the target?","Migrate Install?",
+							JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
+					switch (choice){
+					case 0:
+						try {
+							JOptionPane.showMessageDialog(null, "Please leave this application running, as the migration will happen in the background.\nThis may take several minutes if your computer is under high load, or if your hard drive is old.", "Begining Migration", JOptionPane.PLAIN_MESSAGE);
+
+							FileUtils.copyDirectory(installDir.toFile(),installTarg.toFile());
+							//if we arn't mac, we can delete the old executable folder, since we will need to anyways.
+							if ( OsCheck.getOperatingSystemType() != OsCheck.OSType.MacOS) {
+								FileUtils.deleteDirectory(installDir.toFile());
+							}
+						} catch (IOException e) {
+							System.err.println("failed to move install folder due to IO exception!");
+							e.printStackTrace();
+						}catch (SecurityException e) {
+							System.err.println("failed to move install folder due to security problems! Check your permissions!");
+							JOptionPane.showMessageDialog(null, "failed to move install folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+							e.printStackTrace();
+						}
+						break;
+					case 1:
+						useNativeInstall = true;
+						break;
+					default:
+						System.exit(0);
+						break;
+
+					}
+				}else {
+					//if not, request to install? terminate?
+					System.err.println("Error! No install detected on either the target computer, or the EVault!");
+					JOptionPane.showMessageDialog(null, "No install detected on either the target computer, or the EVault install directory.\nIf your goal is to import your install to this Evault, make sure you have installed it first.", "No Install!", JOptionPane.ERROR_MESSAGE);
+					System.exit(1);
+				}
+			}
+			//purge old symlink if we are not a mac
+			if ( OsCheck.getOperatingSystemType() != OsCheck.OSType.MacOS) {
+				if (Files.isSymbolicLink(installDir) ) {
+					System.out.println("Found an old Symlink. Deleting.");
+					try {
 						Files.deleteIfExists(installDir);
 					} catch (IOException e) {
 						System.err.println("failed to delete file due to IO exception!");
 						e.printStackTrace();
-					}
-			        System.exit(1);
-				}
-				//if so, offer migration & prompt for setup
-				Object[] options = {"Yes",
-	                    "No",
-	                    "Cancel"};
-				int choice = JOptionPane.showOptionDialog(null,"There is a local install on this computer, but not in the target location. Should we move the install to the target?","Migrate Install?",
-	    		JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
-				switch (choice){
-				case 0:
-					try {
-						Files.move(installDir,installTarg);
-					} catch (IOException e) {
-						System.err.println("failed to move install folder due to IO exception!");
-						e.printStackTrace();
 					}catch (SecurityException e) {
-							System.err.println("failed to move install folder due to security problems! Check your permissions!");
-					        JOptionPane.showMessageDialog(null, "failed to move install folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
-							e.printStackTrace();
-					}
-					break;
-				case 1:
-					useNativeInstall = true;
-					break;
-				default:
-			        System.exit(0);
-					break;
-			
+						System.err.println("failed to delete old Symlink Check your permissions!");
+						JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+						e.printStackTrace();
+					}	
+				}else if(Files.exists(installDir)) {
+					System.err.println("Please note that an install is located on both this EVault, and also locally on this computer.\nWe will be running the one that is on the removeable drive.");
+
+					// JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
+
 				}
-			}else {
-				//if not, request to install? terminate?
-				System.err.println("Error! No install detected on either the target computer, or the true install directory!");
-		        JOptionPane.showMessageDialog(null, "No install detected on either the target computer, or the true install directory. If your goal is to import your install to a removeable drive, make sure you have installed it first.", "No Install!", JOptionPane.ERROR_MESSAGE);
-		        System.exit(1);
+
+				//Make links to our removeable install
+
+				if (Files.notExists(installDir)) {
+					try {
+						Files.createSymbolicLink(installDir, installTarg);
+					} catch (IOException e) {
+						System.err.println("failed to make symlink due to IO exception!");
+						e.printStackTrace();
+					} catch (UnsupportedOperationException x) {
+						System.err.println("failed to make symlink! Filesystem does not support this. Sorry!");
+						JOptionPane.showMessageDialog(null, "failed to make symlink! Filesystem does not support symlinks. Sorry, there is no way around this.", "Not Supported", JOptionPane.ERROR_MESSAGE);
+						x.printStackTrace();
+						System.exit(1);
+					}
+				}
 			}
-		}
-		//purge old symlink
-		if (Files.isSymbolicLink(installDir)) {
-			System.out.println("Found an old Symlink. Deleting.");
-			try {
-				Files.deleteIfExists(installDir);
-			} catch (IOException e) {
-				System.err.println("failed to delete file due to IO exception!");
-				e.printStackTrace();
-			}catch (SecurityException e) {
-				System.err.println("failed to delete old Symlink Check your permissions!");
-		        JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
-				e.printStackTrace();
-			}	
-		}else if(Files.exists(installDir)) {
-			System.err.println("Please note that an install is located on both the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive.");
-
-			// JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
+		}else {
+			System.out.println("Deleting the install and setting up symlinks are not supported by mac! We are leaving the install intact!"); 
+			JOptionPane.showMessageDialog(null, "Migration is now finished.\nYou may delete the Exodus.app application from your applications folder if you choose.", "Migration Complete", JOptionPane.PLAIN_MESSAGE);
 
 		}
-		
-		//Make links to our removeable install
 
-		if (Files.notExists(installDir)) {
-			try {
-				Files.createSymbolicLink(installDir, installTarg);
-			} catch (IOException e) {
-				System.err.println("failed to make symlink due to IO exception!");
-				e.printStackTrace();
-			} catch (UnsupportedOperationException x) {
-				System.err.println("failed to make symlink! Filesystem does not support this. Sorry!");
-		        JOptionPane.showMessageDialog(null, "failed to make symlink! Filesystem does not support symlinks. Sorry, there is no way around this.", "Not Supported", JOptionPane.ERROR_MESSAGE);
-				x.printStackTrace();
-				System.exit(1);
-			}
-		}
-		}
-		
 		//Check if udata exsists on removeable drive
 		if (Files.notExists(userDataTarg)) {
 			//if not, Check if udata exsists on computer			
 			if (Files.exists(userDataDir)) {
 				if (Files.isSymbolicLink(userDataDir)) {
-			        System.err.println("Error! No user wallet data found, but symlink detected on the target computer!");
-			        JOptionPane.showMessageDialog(null, "No user wallet data was detected. A symlink was detected though, and will be deleted.", "No Data!", JOptionPane.ERROR_MESSAGE);
-			        try {
+					System.err.println("Error! No user wallet data found, but symlink detected on the target computer!");
+					JOptionPane.showMessageDialog(null, "No user wallet data was detected. A symlink was detected though, and will be deleted.", "No Data!", JOptionPane.ERROR_MESSAGE);
+					try {
 						Files.deleteIfExists(userDataDir);
 					} catch (IOException e) {
 						System.err.println("failed to delete file due to IO exception!");
 						e.printStackTrace();
 					}
-			        System.exit(1);
+					System.exit(1);
 				}
 				//if so, offer migration
 				Object[] options = {"Yes",
-	                    "No",
-	                    "Cancel"};
-				int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but not in the target location. Should we migrate the wallet to the target? No backup will be made.","Migrate Wallet?",
-	    		JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
+						"No",
+				"Cancel"};
+				int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but not on this EVault.\n Should we migrate the wallet to this EVault and remove it from this computer? A backup will NOT be made.","Migrate Wallet?",
+						JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
 				switch (choice){
 				case 0:
 					try {
-						Files.move(userDataDir,userDataTarg);
+						FileUtils.copyDirectory(userDataDir.toFile(),userDataTarg.toFile());
+						FileUtils.deleteDirectory(userDataDir.toFile());
+
 					} catch (IOException e) {
 						System.err.println("failed to move data folder due to IO exception!");
 						e.printStackTrace();
 					}catch (SecurityException e) {
-							System.err.println("failed to move data folder due to security problems! Check your permissions!");
-					        JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
-							e.printStackTrace();
+						System.err.println("failed to move data folder due to security problems! Check your permissions!");
+						JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+						e.printStackTrace();
 					}
 					break;
 				case 1:
 					break;
 				default:
-			        System.exit(0);
+					System.exit(0);
 					break;
-			
+
 				}
 			}else {
 				//if not, continue
-				
+
 			}
 		}
 		//Purge Old Symlinks
@@ -195,7 +231,7 @@ public class Evault {
 				e.printStackTrace();
 			}catch (SecurityException e) {
 				System.err.println("failed to delete old Symlink, Check your permissions!");
-		        JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();
 			}
 		}else if(Files.exists(userDataDir)) {
@@ -205,30 +241,31 @@ public class Evault {
 			Path backupLocation = Paths.get(userDataDir.getParent().toString(), "ExodusDataBackup-" + dateFormat.format(date));
 			//TODO: We have 2 diffrent wallets!!!---------------------------------------------------------------------------
 			Object[] options = {"Yes",
-                    "Cancel"};
-			int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but also one in the target location. Should we overwrite the wallet on this computer? A backup will be made at " + backupLocation.toString(),"Migrate Wallet?",
-    		JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[1]);
+			"Cancel"};
+			int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but also one on this EVault. Should we remove the wallet on this computer so Exodus can use the EVault? A backup will be made at " + backupLocation.toString(),"Migrate Wallet?",
+					JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[1]);
 			switch (choice){
 			case 0:
 				try {
-					Files.move(userDataDir,backupLocation);
+					FileUtils.moveDirectory(userDataDir.toFile(),backupLocation.toFile());
+					FileUtils.deleteDirectory(userDataDir.toFile());
 				} catch (IOException e) {
 					System.err.println("failed to move data folder due to IO exception!");
 					e.printStackTrace();
-			        System.exit(0);
+					System.exit(0);
 
 				}catch (SecurityException e) {
-						System.err.println("failed to move data folder due to security problems! Check your permissions!");
-				        JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
-						e.printStackTrace();
-				        System.exit(0); 
+					System.err.println("failed to move data folder due to security problems! Check your permissions!");
+					JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+					e.printStackTrace();
+					System.exit(0); 
 
 				}
 				break;
 			default:
-		        System.exit(0);
+				System.exit(0);
 				break;
-		
+
 			}
 		}
 		//Make links to our removeable Udata
@@ -240,7 +277,7 @@ public class Evault {
 				e.printStackTrace();
 			} catch (UnsupportedOperationException x) {
 				System.err.println("failed to make symlink! Filesystem does not support this. Sorry!");
-		        JOptionPane.showMessageDialog(null, "failed to make symlink! Filesystem does not support symlinks. Sorry, there is no way around this.", "Not Supported", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, "failed to make symlink! Filesystem does not support symlinks. Sorry, there is no way around this.", "Not Supported", JOptionPane.ERROR_MESSAGE);
 				x.printStackTrace();
 				System.exit(1);
 			}
@@ -249,39 +286,45 @@ public class Evault {
 					Files.createDirectory(userDataTarg);
 				} catch (IOException e) {
 					System.err.println("failed to make User Data folder!");
-			        JOptionPane.showMessageDialog(null, "failed to make USER DATA FOLDER!", "Error!", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null, "failed to make USER DATA FOLDER!", "Error!", JOptionPane.ERROR_MESSAGE);
 					e.printStackTrace();
 					System.exit(1);
 				}
 			}
 
 		}
-		
+
 		//Run program
-		 ProcessBuilder pb ;
-		 Process p;
-		 String executableFolder=installTarg.toString();
-		 if (useNativeInstall) {
-			 executableFolder=installDir.toString();
-		 }
+		ProcessBuilder pb ;
+		Process p;
+		String executableFolder=installTarg.toString();
+		if (useNativeInstall) {
+			executableFolder=installDir.toString();
+		}
 		try {
 			switch (OsCheck.getOperatingSystemType()) {
 			case Linux:
 				pb=new ProcessBuilder(Paths.get(executableFolder,"Exodus").toString());
-				  p = pb.start();
+				p = pb.start();
 				//Runtime.getRuntime().exec("Exodus", null, installTarg.toFile());
 				break;
 			case Windows:
-				 pb = new ProcessBuilder(Paths.get(executableFolder,"Exodus.exe").toString());
-				 p = pb.start();
+				pb = new ProcessBuilder(Paths.get(executableFolder,"Exodus.exe").toString());
+				p = pb.start();
 				//Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
 				break;
 			case MacOS:
-				pb = new ProcessBuilder(Paths.get(executableFolder,"Exodus.app").toString());
-				 p = pb.start();
+				/*//actually, forget it, this did not work anyways//Run with open, not PB
+				String command =  "open " + "\""+executableFolder+"\"";
+				JOptionPane.showMessageDialog(null, command, "Running:", JOptionPane.ERROR_MESSAGE);
+ 
+				p = Runtime.getRuntime().exec(command);
+				//*/
+				pb = new ProcessBuilder(Paths.get(executableFolder,"contents","MacOS","Exodus").toString());
+				p = pb.start();
 				break;
 			default:
-			     System.err.println("Operating system is unknown! Guessing linux/unix-like?");
+				System.err.println("Operating system is unknown! Guessing linux/unix-like?");
 				userDataDir=  Paths.get(homeDir,".config","exodus");
 				pb=new ProcessBuilder(Paths.get(executableFolder,"Exodus").toString());
 				p = pb.start();
@@ -289,8 +332,8 @@ public class Evault {
 			} 
 		} catch (IOException e) {
 			System.err.println("failed to run Exodus!");
-	        JOptionPane.showMessageDialog(null, "Failed to run Exodus! Check your permissions!", "Failed to run Exodus", JOptionPane.ERROR_MESSAGE);
-	    	e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Failed to run Exodus! Check your permissions!", "Failed to run Exodus", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
 		}
 
 	}
@@ -311,48 +354,48 @@ public class Evault {
 	 * @see FileUtils#urlToFile(URL) to convert the result to a {@link File}.
 	 */
 	public static URL getLocation(final Class<?> c) {
-	    if (c == null) return null; // could not load the class
+		if (c == null) return null; // could not load the class
 
-	    // try the easy way first
-	    try {
-	        final URL codeSourceLocation =
-	            c.getProtectionDomain().getCodeSource().getLocation();
-	        if (codeSourceLocation != null) return codeSourceLocation;
-	    }
-	    catch (final SecurityException e) {
-	        System.err.println("Cannot access protection domain.");
-	    }
-	    catch (final NullPointerException e) {
-	        System.err.println("Protection domain or code source is null.");
-	    }
+		// try the easy way first
+		try {
+			final URL codeSourceLocation =
+					c.getProtectionDomain().getCodeSource().getLocation();
+			if (codeSourceLocation != null) return codeSourceLocation;
+		}
+		catch (final SecurityException e) {
+			System.err.println("Cannot access protection domain.");
+		}
+		catch (final NullPointerException e) {
+			System.err.println("Protection domain or code source is null.");
+		}
 
-	    // NB: The easy way failed, so we try the hard way. We ask for the class
-	    // itself as a resource, then strip the class's path from the URL string,
-	    // leaving the base path.
+		// NB: The easy way failed, so we try the hard way. We ask for the class
+		// itself as a resource, then strip the class's path from the URL string,
+		// leaving the base path.
 
-	    // get the class's raw resource path
-	    final URL classResource = c.getResource(c.getSimpleName() + ".class");
-	    if (classResource == null) return null; // cannot find class resource
+		// get the class's raw resource path
+		final URL classResource = c.getResource(c.getSimpleName() + ".class");
+		if (classResource == null) return null; // cannot find class resource
 
-	    final String url = classResource.toString();
-	    final String suffix = c.getCanonicalName().replace('.', '/') + ".class";
-	    if (!url.endsWith(suffix)) return null; // weird URL
+		final String url = classResource.toString();
+		final String suffix = c.getCanonicalName().replace('.', '/') + ".class";
+		if (!url.endsWith(suffix)) return null; // weird URL
 
-	    // strip the class's path from the URL string
-	    final String base = url.substring(0, url.length() - suffix.length());
+		// strip the class's path from the URL string
+		final String base = url.substring(0, url.length() - suffix.length());
 
-	    String path = base;
+		String path = base;
 
-	    // remove the "jar:" prefix and "!/" suffix, if present
-	    if (path.startsWith("jar:")) path = path.substring(4, path.length() - 2);
+		// remove the "jar:" prefix and "!/" suffix, if present
+		if (path.startsWith("jar:")) path = path.substring(4, path.length() - 2);
 
-	    try {
-	        return new URL(path);
-	    }
-	    catch (final MalformedURLException e) {
-	        e.printStackTrace();
-	        return null;
-	    }
+		try {
+			return new URL(path);
+		}
+		catch (final MalformedURLException e) {
+			e.printStackTrace();
+			return null;
+		}
 	} 
 
 	/**
@@ -367,7 +410,7 @@ public class Evault {
 	 * @throws IllegalArgumentException if the URL does not correspond to a file.
 	 */
 	public static File urlToFile(final URL url) {
-	    return url == null ? null : urlToFile(url.toString());
+		return url == null ? null : urlToFile(url.toString());
 	}
 
 	/**
@@ -378,30 +421,30 @@ public class Evault {
 	 * @throws IllegalArgumentException if the URL does not correspond to a file.
 	 */
 	public static File urlToFile(final String url) {
-	    String path = url;
-	    if (path.startsWith("jar:")) {
-	        // remove "jar:" prefix and "!/" suffix
-	        final int index = path.indexOf("!/");
-	        path = path.substring(4, index);
-	    }
-	    try {
-	        if (OsCheck.getOperatingSystemType()==OsCheck.OSType.Windows && path.matches("file:[A-Za-z]:.*")) {
-	            path = "file:/" + path.substring(5);
-	        }
-	        return new File(new URL(path).toURI());
-	    }
-	    catch (final MalformedURLException e) {
-	       System.err.println("URL is not completely well-formed.");
-	    }
-	    catch (final URISyntaxException e) {
-		     System.err.println("URL is not completely well-formed, and threw a syntax error.");
-	    }
-	    if (path.startsWith("file:")) {
-	        // pass through the URL as-is, minus "file:" prefix
-	        path = path.substring(5);
-	        return new File(path);
-	    }
-	    throw new IllegalArgumentException("Invalid URL: " + url);
+		String path = url;
+		if (path.startsWith("jar:")) {
+			// remove "jar:" prefix and "!/" suffix
+			final int index = path.indexOf("!/");
+			path = path.substring(4, index);
+		}
+		try {
+			if (OsCheck.getOperatingSystemType()==OsCheck.OSType.Windows && path.matches("file:[A-Za-z]:.*")) {
+				path = "file:/" + path.substring(5);
+			}
+			return new File(new URL(path).toURI());
+		}
+		catch (final MalformedURLException e) {
+			System.err.println("URL is not completely well-formed.");
+		}
+		catch (final URISyntaxException e) {
+			System.err.println("URL is not completely well-formed, and threw a syntax error.");
+		}
+		if (path.startsWith("file:")) {
+			// pass through the URL as-is, minus "file:" prefix
+			path = path.substring(5);
+			return new File(path);
+		}
+		throw new IllegalArgumentException("Invalid URL: " + url);
 	}
-	
+
 }

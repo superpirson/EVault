@@ -5,7 +5,7 @@
   <errTitle>EVault</errTitle>
   <chdir>.</chdir>
   <icon>EVault.ico</icon>
-  <restartOnCrash>true</restartOnCrash>
+  <restartOnCrash>false</restartOnCrash>
   <manifest>EVault.manifest</manifest>
   <jre>
     <minVersion>1.6.0</minVersion>

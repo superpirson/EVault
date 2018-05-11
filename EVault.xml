@@ -29,8 +29,11 @@
 		</pathconvert>
 		<!-- Put everything in ${build} into a jar file -->
 		<jar jarfile="EVault.jar"> 
+		    <zipgroupfileset dir="${lib}" includes="*.jar"/>
+
 			<fileset dir="${build}" includes="**/*" />
 			<fileset dir="${src}" includes="images/*" /> 
+			<!--<fileset dir="${lib}" includes="**/*" /> -->
 
 			<manifest>
 				<!-- SET YOUR MAIN CLASS HERE -->
