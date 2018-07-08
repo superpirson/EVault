@@ -11,6 +11,9 @@ import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
+import java.util.ResourceBundle;
+
 import org.apache.commons.io.FileUtils;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
@@ -23,14 +26,20 @@ public class Evault {
 	static Path userDataDir;
 	static Path userDataTarg;
 	public static void main(String[] args) { 
-		// TODO Auto-generated method stub
+		//get internationlized strings
+		ResourceBundle bundle = ResourceBundle.getBundle("strings");
+		
+		//decides if we are using the pre-existing install on the computer, not the removeable drive
 		boolean useNativeInstall = false;
+		
 		URL url = getLocation(Evault.class);
 		File jarFile = urlToFile(url);
 		String jarDir = jarFile.getParent();
 		String homeDir = System.getProperty("user.home");
 		System.out.println("jar directory is: " + jarDir.toString());
 		System.out.println("Home directory is: " + homeDir.toString());
+		System.out.println("Detected locale as " + Locale.getDefault());
+
 		userDataTarg= Paths.get(jarDir,dataLinkFolderName);
 		ImageIcon icon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(Evault.class.getResource("/images/48x48.png")));
 		
@@ -41,7 +50,7 @@ public class Evault {
 				Files.createDirectory(installRootFolder);
 			} catch (IOException e) {
 				System.err.println("failed to create installs folder due to IO exception!");
-				JOptionPane.showMessageDialog(null, "failed to create the installs folder due to an IO exception!", "IO Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, bundle.getString("err_io_exception_on_install_folder_create"), bundle.getString("io_error"), JOptionPane.ERROR_MESSAGE);
 
 				e.printStackTrace();
 			}
@@ -68,6 +77,7 @@ public class Evault {
 		default:
 			System.err.println("Operating system is unknown! Guessing linux/unix-like?");
 			userDataDir=  Paths.get(homeDir,".config","exodus");
+			installDir=  Paths.get(homeDir,"Exodus-linux-x64");
 			installTarg = Paths.get(jarDir,installLinkFolderName,"Unknown_OS");
 
 			break;
@@ -81,7 +91,7 @@ public class Evault {
 				if (Files.exists(installDir)) {
 					if (Files.isSymbolicLink(installDir)) {
 						System.err.println("Error! No install, but symlink detected on either the target computer, or the true install directory!");
-						JOptionPane.showMessageDialog(null, "No install detected on either the target computer, or on this EVault.\nA symlink was detected though, and will be deleted.", "No Install!", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, bundle.getString("err_no_install_detected_symlink_detected"), bundle.getString("no_install"), JOptionPane.ERROR_MESSAGE);
 						try {
 							Files.deleteIfExists(installDir);
 						} catch (IOException e) {
@@ -91,14 +101,16 @@ public class Evault {
 						System.exit(1);
 					}
 					//if so, offer migration & prompt for setup
-					Object[] options = {"Yes",
-							"No",
-					"Cancel"};
-					int choice = JOptionPane.showOptionDialog(null,"There is a local install on this computer, but not on this EVault.\n Should we move the install to the target?","Migrate Install?",
+					Object[] options = {bundle.getString("option_yes"),
+							bundle.getString("option_no"),
+							bundle.getString("option_cancel")};
+					int choice = JOptionPane.showOptionDialog(null,bundle.getString("should_migrate_install"),bundle.getString("migrate_install"),
 							JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
 					switch (choice){
 					case 0:
 						try {
+							
+							//TODO progress Bar!
 							JOptionPane.showMessageDialog(null, "Please leave this application running, as the migration will happen in the background.\nThis may take several minutes if your computer is under high load, or if your hard drive is old.", "Begining Migration", JOptionPane.PLAIN_MESSAGE);
 
 							FileUtils.copyDirectory(installDir.toFile(),installTarg.toFile());
@@ -111,7 +123,7 @@ public class Evault {
 							e.printStackTrace();
 						}catch (SecurityException e) {
 							System.err.println("failed to move install folder due to security problems! Check your permissions!");
-							JOptionPane.showMessageDialog(null, "failed to move install folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+							JOptionPane.showMessageDialog(null, bundle.getString("err_failed_move_install_permissions"), bundle.getString("security_error"), JOptionPane.ERROR_MESSAGE);
 							e.printStackTrace();
 						}
 						break;
@@ -126,7 +138,7 @@ public class Evault {
 				}else {
 					//if not, request to install? terminate?
 					System.err.println("Error! No install detected on either the target computer, or the EVault!");
-					JOptionPane.showMessageDialog(null, "No install detected on either the target computer, or the EVault install directory.\nIf your goal is to import your install to this Evault, make sure you have installed it first.", "No Install!", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null, bundle.getString("err_no_install"), bundle.getString("no_install"), JOptionPane.ERROR_MESSAGE);
 					System.exit(1);
 				}
 			}
@@ -141,11 +153,11 @@ public class Evault {
 						e.printStackTrace();
 					}catch (SecurityException e) {
 						System.err.println("failed to delete old Symlink Check your permissions!");
-						JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, bundle.getString("err_security_delete_symlink"), bundle.getString("security_error"), JOptionPane.ERROR_MESSAGE);
 						e.printStackTrace();
 					}	
 				}else if(Files.exists(installDir)) {
-					System.err.println("Please note that an install is located on both this EVault, and also locally on this computer.\nWe will be running the one that is on the removeable drive.");
+					System.err.println(bundle.getString("notice_running_from_evault"));
 
 					// JOptionPane.showMessageDialog(null, "Please note that an install is located in both on the removeable drive, and also locally on this computer. We will be running the one that is on the removeable drive!", "Warning", JOptionPane.WARNING_MESSAGE);
 
@@ -161,7 +173,7 @@ public class Evault {
 						e.printStackTrace();
 					} catch (UnsupportedOperationException x) {
 						System.err.println("failed to make symlink! Filesystem does not support this. Sorry!");
-						JOptionPane.showMessageDialog(null, "failed to make symlink! Filesystem does not support symlinks. Sorry, there is no way around this.", "Not Supported", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, bundle.getString("err_fs_symlinks_unsupported"), bundle.getString("not_supported"), JOptionPane.ERROR_MESSAGE);
 						x.printStackTrace();
 						System.exit(1);
 					}
@@ -169,6 +181,7 @@ public class Evault {
 			}
 		}else {
 			System.out.println("Deleting the install and setting up symlinks are not supported by mac! We are leaving the install intact!"); 
+			//TODO: finish testing this!
 			JOptionPane.showMessageDialog(null, "Migration is now finished.\nYou may delete the Exodus.app application from your applications folder if you choose.", "Migration Complete", JOptionPane.PLAIN_MESSAGE);
 
 		}
@@ -179,7 +192,7 @@ public class Evault {
 			if (Files.exists(userDataDir)) {
 				if (Files.isSymbolicLink(userDataDir)) {
 					System.err.println("Error! No user wallet data found, but symlink detected on the target computer!");
-					JOptionPane.showMessageDialog(null, "No user wallet data was detected. A symlink was detected though, and will be deleted.", "No Data!", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null, bundle.getString("err_no_wallet_detected_symlink_detected"), bundle.getString("no_wallet"), JOptionPane.ERROR_MESSAGE);
 					try {
 						Files.deleteIfExists(userDataDir);
 					} catch (IOException e) {
@@ -189,10 +202,11 @@ public class Evault {
 					System.exit(1);
 				}
 				//if so, offer migration
-				Object[] options = {"Yes",
-						"No",
-				"Cancel"};
-				int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but not on this EVault.\n Should we migrate the wallet to this EVault and remove it from this computer? A backup will NOT be made.","Migrate Wallet?",
+				Object[] options = {bundle.getString("option_yes"),
+						bundle.getString("option_no"),
+						bundle.getString("option_cancel")
+						};
+				int choice = JOptionPane.showOptionDialog(null,bundle.getString("should_migrate_wallet"),bundle.getString("migrate_wallet"),
 						JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
 				switch (choice){
 				case 0:
@@ -205,7 +219,7 @@ public class Evault {
 						e.printStackTrace();
 					}catch (SecurityException e) {
 						System.err.println("failed to move data folder due to security problems! Check your permissions!");
-						JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, bundle.getString("err_wallet_folder_security"), bundle.getString("security_error"), JOptionPane.ERROR_MESSAGE);
 						e.printStackTrace();
 					}
 					break;
@@ -231,7 +245,7 @@ public class Evault {
 				e.printStackTrace();
 			}catch (SecurityException e) {
 				System.err.println("failed to delete old Symlink, Check your permissions!");
-				JOptionPane.showMessageDialog(null, "failed to delete symlink due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, bundle.getString("err_security_delete_symlink"),  bundle.getString("security_error"), JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();
 			}
 		}else if(Files.exists(userDataDir)) {
@@ -240,9 +254,9 @@ public class Evault {
 
 			Path backupLocation = Paths.get(userDataDir.getParent().toString(), "ExodusDataBackup-" + dateFormat.format(date));
 			//TODO: We have 2 diffrent wallets!!!---------------------------------------------------------------------------
-			Object[] options = {"Yes",
-			"Cancel"};
-			int choice = JOptionPane.showOptionDialog(null,"There is a wallet on this computer, but also one on this EVault. Should we remove the wallet on this computer so Exodus can use the EVault? A backup will be made at " + backupLocation.toString(),"Migrate Wallet?",
+			Object[] options = {bundle.getString("option_yes"),
+					bundle.getString("option_cancel")};
+			int choice = JOptionPane.showOptionDialog(null,bundle.getString("wallet_in_both_places_replace") + backupLocation.toString(),bundle.getString("migrate_wallet"),
 					JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[1]);
 			switch (choice){
 			case 0:
@@ -256,7 +270,7 @@ public class Evault {
 
 				}catch (SecurityException e) {
 					System.err.println("failed to move data folder due to security problems! Check your permissions!");
-					JOptionPane.showMessageDialog(null, "failed to move data folder due to security problems! Check your permissions!", "Security Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null, bundle.getString("err_wallet_folder_security"), bundle.getString("security_error"), JOptionPane.ERROR_MESSAGE);
 					e.printStackTrace();
 					System.exit(0); 
 
@@ -277,7 +291,7 @@ public class Evault {
 				e.printStackTrace();
 			} catch (UnsupportedOperationException x) {
 				System.err.println("failed to make symlink! Filesystem does not support this. Sorry!");
-				JOptionPane.showMessageDialog(null, "failed to make symlink! Filesystem does not support symlinks. Sorry, there is no way around this.", "Not Supported", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, bundle.getString("err_fs_symlinks_unsupported"), bundle.getString("not_supported"), JOptionPane.ERROR_MESSAGE);
 				x.printStackTrace();
 				System.exit(1);
 			}
@@ -286,7 +300,7 @@ public class Evault {
 					Files.createDirectory(userDataTarg);
 				} catch (IOException e) {
 					System.err.println("failed to make User Data folder!");
-					JOptionPane.showMessageDialog(null, "failed to make USER DATA FOLDER!", "Error!", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null,bundle.getString("err_io_exception_on_data_folder_create"),bundle.getString("error"), JOptionPane.ERROR_MESSAGE);
 					e.printStackTrace();
 					System.exit(1);
 				}
@@ -332,7 +346,7 @@ public class Evault {
 			} 
 		} catch (IOException e) {
 			System.err.println("failed to run Exodus!");
-			JOptionPane.showMessageDialog(null, "Failed to run Exodus! Check your permissions!", "Failed to run Exodus", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, bundle.getString("err_exodus_run_failed"),bundle.getString("error"), JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
 

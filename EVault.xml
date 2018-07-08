@@ -33,6 +33,8 @@
 
 			<fileset dir="${build}" includes="**/*" />
 			<fileset dir="${src}" includes="images/*" /> 
+			<fileset dir="${src}" includes="strings_*" /> 
+
 			<!--<fileset dir="${lib}" includes="**/*" /> -->
 
 			<manifest>
