@@ -186,8 +186,8 @@ public class Evault {
 
 		}
 
-		//Check if udata exsists on removeable drive
-		if (Files.notExists(userDataTarg)) {
+		//Check if udata exsists on removeable drive by looking for exodus.wallet
+		if (Files.notExists(userDataTarg.resolve("exodus.wallet"))) {
 			//if not, Check if udata exsists on computer			
 			if (Files.exists(userDataDir)) {
 				if (Files.isSymbolicLink(userDataDir)) {
@@ -203,11 +203,10 @@ public class Evault {
 				}
 				//if so, offer migration
 				Object[] options = {bundle.getString("option_yes"),
-						bundle.getString("option_no"),
 						bundle.getString("option_cancel")
 						};
 				int choice = JOptionPane.showOptionDialog(null,bundle.getString("should_migrate_wallet"),bundle.getString("migrate_wallet"),
-						JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
+						JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[1]);
 				switch (choice){
 				case 0:
 					try {
@@ -223,8 +222,7 @@ public class Evault {
 						e.printStackTrace();
 					}
 					break;
-				case 1:
-					break;
+
 				default:
 					System.exit(0);
 					break;
@@ -318,12 +316,12 @@ public class Evault {
 		try {
 			switch (OsCheck.getOperatingSystemType()) {
 			case Linux:
-				pb=new ProcessBuilder(Paths.get(executableFolder,"Exodus").toString());
+				pb=new ProcessBuilder().inheritIO().command(Paths.get(executableFolder,"Exodus").toString());
 				p = pb.start();
 				//Runtime.getRuntime().exec("Exodus", null, installTarg.toFile());
 				break;
 			case Windows:
-				pb = new ProcessBuilder(Paths.get(executableFolder,"Exodus.exe").toString());
+				pb = new ProcessBuilder().inheritIO().command(Paths.get(executableFolder,"Exodus.exe").toString());
 				p = pb.start();
 				//Runtime.getRuntime().exec("Exodus.exe", null, installTarg.toFile());
 				break;
@@ -334,7 +332,7 @@ public class Evault {
  
 				p = Runtime.getRuntime().exec(command);
 				//*/
-				pb = new ProcessBuilder(Paths.get(executableFolder,"contents","MacOS","Exodus").toString());
+				pb = new ProcessBuilder().inheritIO().command(Paths.get(executableFolder,"contents","MacOS","Exodus").toString());
 				p = pb.start();
 				break;
 			default:
