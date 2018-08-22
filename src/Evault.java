@@ -16,6 +16,7 @@ import java.util.ResourceBundle;
 
 import org.apache.commons.io.FileUtils;
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 public class Evault {
 	static final String installLinkFolderName = "exodus_install";
@@ -106,13 +107,13 @@ public class Evault {
 							bundle.getString("option_cancel")};
 					int choice = JOptionPane.showOptionDialog(null,bundle.getString("should_migrate_install"),bundle.getString("migrate_install"),
 							JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.QUESTION_MESSAGE,icon,options,options[2]);
+					TransferingDialog transferDialog = null;
 					switch (choice){
 					case 0:
 						try {
+							transferDialog = new TransferingDialog(bundle.getString("currently_transfering"),bundle.getString("beginning_migration")); 
 							
 							//TODO progress Bar!
-							JOptionPane.showMessageDialog(null, "Please leave this application running, as the migration will happen in the background.\nThis may take several minutes if your computer is under high load, or if your hard drive is old.", "Begining Migration", JOptionPane.PLAIN_MESSAGE);
-
 							FileUtils.copyDirectory(installDir.toFile(),installTarg.toFile());
 							//if we arn't mac, we can delete the old executable folder, since we will need to anyways.
 							if ( OsCheck.getOperatingSystemType() != OsCheck.OSType.MacOS) {
@@ -125,6 +126,12 @@ public class Evault {
 							System.err.println("failed to move install folder due to security problems! Check your permissions!");
 							JOptionPane.showMessageDialog(null, bundle.getString("err_failed_move_install_permissions"), bundle.getString("security_error"), JOptionPane.ERROR_MESSAGE);
 							e.printStackTrace();
+						}
+						finally {
+							//Close the window we opened to notify the user
+					
+							transferDialog.setVisible(false);
+							transferDialog.dispose();
 						}
 						break;
 					case 1:
